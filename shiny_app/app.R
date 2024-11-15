@@ -1,0 +1,185 @@
+library(shiny)
+library(shinyTime)
+
+# Default start time (7 AM)
+default_start_time <- as.POSIXct("07:00", format = "%H:%M")
+
+# Example step offsets (in minutes)
+step_offsets <- c(300, 60, 30, 30, 30, 30, 30, 30, 150, 20)
+
+# Default times
+default_times <- list(
+  step_1 = default_start_time,
+  step_2 = default_start_time + step_offsets[1] * 60,
+  step_3 = default_start_time + (step_offsets[1] + step_offsets[2]) * 60,
+  step_4 = default_start_time + sum(step_offsets[1:3]) * 60,
+  step_5 = default_start_time + sum(step_offsets[1:4]) * 60,
+  step_6 = default_start_time + sum(step_offsets[1:5]) * 60,
+  step_7 = default_start_time + sum(step_offsets[1:6]) * 60,
+  step_8 = default_start_time + sum(step_offsets[1:7]) * 60,
+  step_9 = default_start_time + sum(step_offsets[1:8]) * 60,
+  step_10 = default_start_time + sum(step_offsets[1:9]) * 60,
+  step_11 = default_start_time + sum(step_offsets[1:10]) * 60
+)
+
+# Helper function to format times as 12-hour format with AM/PM
+format_time_12h <- function(time) {
+  format(time, "%I:%M %p")
+}
+
+ui <- fluidPage(
+  titlePanel("Barb's Bread Timing Machine"),
+  sidebarLayout(
+    sidebarPanel(
+      timeInput("step_1", "1. Feed Starter:", value = default_times$step_1, seconds = FALSE),
+      timeInput("step_2", "2. Start Autolyse & Make Porridge:", value = default_times$step_2, seconds = FALSE),
+      timeInput("step_3", "3. Add Salt and Start Bulk Fermentation:", value = default_times$step_3, seconds = FALSE),
+      timeInput("step_4", "4. First Turn and Mix-in Oats:", value = default_times$step_4, seconds = FALSE),
+      timeInput("step_5", "5. Turn #2:", value = default_times$step_5, seconds = FALSE),
+      timeInput("step_6", "6. Turn #3:", value = default_times$step_6, seconds = FALSE),
+      timeInput("step_7", "7. Turn #4:", value = default_times$step_7, seconds = FALSE),
+      timeInput("step_8", "8. Turn #5:", value = default_times$step_8, seconds = FALSE),
+      timeInput("step_9", "9. Turn #6 and Leave Alone for 2.5 hours:", value = default_times$step_9, seconds = FALSE),
+      timeInput("step_10", "10. Turn on Counter and Shape for Bench Rest:", value = default_times$step_10, seconds = FALSE),
+      timeInput("step_11", "11. Fold and Place in Fridge:", value = default_times$step_11, seconds = FALSE),
+      
+      actionButton("reset", "Reset")
+    ),
+    mainPanel(
+      h4("Adjusted Times:"),
+      verbatimTextOutput("adjusted_times")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  # Reactive values to store times
+  times <- reactiveValues(
+    step_1 = default_times$step_1,
+    step_2 = default_times$step_2,
+    step_3 = default_times$step_3,
+    step_4 = default_times$step_4,
+    step_5 = default_times$step_5,
+    step_6 = default_times$step_6,
+    step_7 = default_times$step_7,
+    step_8 = default_times$step_8,
+    step_9 = default_times$step_9,
+    step_10 = default_times$step_10,
+    step_11 = default_times$step_11
+  )
+  
+  # Function to update subsequent steps
+  update_following_steps <- function(changed_step, times, session) {
+    step_names <- names(times)
+    step_index <- which(step_names == changed_step)
+    
+    for (i in (step_index + 1):length(step_names)) {
+      new_time <- times[[step_names[i - 1]]] + step_offsets[i - 1] * 60  # Add offset for next step
+      times[[step_names[i]]] <- new_time
+      updateTimeInput(session, step_names[i], value = new_time)
+    }
+  }
+  
+  # Observers for each step
+  observeEvent(input$step_1, {
+    times$step_1 <- input$step_1
+    update_following_steps("step_1", times, session)
+  })
+  
+  observeEvent(input$step_2, {
+    times$step_2 <- input$step_2
+    update_following_steps("step_2", times, session)
+  })
+  
+  observeEvent(input$step_3, {
+    times$step_3 <- input$step_3
+    update_following_steps("step_3", times, session)
+  })
+  
+  observeEvent(input$step_4, {
+    times$step_4 <- input$step_4
+    update_following_steps("step_4", times, session)
+  })
+  
+  observeEvent(input$step_5, {
+    times$step_5 <- input$step_5
+    update_following_steps("step_5", times, session)
+  })
+  
+  observeEvent(input$step_6, {
+    times$step_6 <- input$step_6
+    update_following_steps("step_6", times, session)
+  })
+  
+  observeEvent(input$step_7, {
+    times$step_7 <- input$step_7
+    update_following_steps("step_7", times, session)
+  })
+  
+  observeEvent(input$step_8, {
+    times$step_8 <- input$step_8
+    update_following_steps("step_8", times, session)
+  })
+  
+  observeEvent(input$step_9, {
+    times$step_9 <- input$step_9
+    update_following_steps("step_9", times, session)
+  })
+  
+  observeEvent(input$step_10, {
+    times$step_10 <- input$step_10
+    update_following_steps("step_10", times, session)
+  })
+  
+  observeEvent(input$step_11, {
+    times$step_11 <- input$step_11
+  })
+  
+  # Reset button to revert to default times
+  observeEvent(input$reset, {
+    times$step_1 <- default_times$step_1
+    times$step_2 <- default_times$step_2
+    times$step_3 <- default_times$step_3
+    times$step_4 <- default_times$step_4
+    times$step_5 <- default_times$step_5
+    times$step_6 <- default_times$step_6
+    times$step_7 <- default_times$step_7
+    times$step_8 <- default_times$step_8
+    times$step_9 <- default_times$step_9
+    times$step_10 <- default_times$step_10
+    times$step_11 <- default_times$step_11
+    
+    # Reset all the time inputs to default values
+    updateTimeInput(session, "step_1", value = default_times$step_1)
+    updateTimeInput(session, "step_2", value = default_times$step_2)
+    updateTimeInput(session, "step_3", value = default_times$step_3)
+    updateTimeInput(session, "step_4", value = default_times$step_4)
+    updateTimeInput(session, "step_5", value = default_times$step_5)
+    updateTimeInput(session, "step_6", value = default_times$step_6)
+    updateTimeInput(session, "step_7", value = default_times$step_7)
+    updateTimeInput(session, "step_8", value = default_times$step_8)
+    updateTimeInput(session, "step_9", value = default_times$step_9)
+    updateTimeInput(session, "step_10", value = default_times$step_10)
+    updateTimeInput(session, "step_11", value = default_times$step_11)
+  })
+  
+  # Display the adjusted times in 12-hour format without seconds
+  output$adjusted_times <- renderPrint({
+    list(
+      "1. Feed Starter:" = format_time_12h(times$step_1),
+      "2. Start Autolyse & Make Porridge:" = format_time_12h(times$step_2),
+      "3. Add Salt and Start Bulk Fermentation:" = format_time_12h(times$step_3),
+      "4. First Turn and Mix-in Oats:" = format_time_12h(times$step_4),
+      "5. Turn #2:" = format_time_12h(times$step_5),
+      "6. Turn #3:" = format_time_12h(times$step_6),
+      "7. Turn #4:" = format_time_12h(times$step_7),
+      "8. Turn #5:" = format_time_12h(times$step_8),
+      "9. Turn #6 and Leave Alone for 2.5 hours:" = format_time_12h(times$step_9),
+      "10. Turn on Counter and Shape for Bench Rest:" = format_time_12h(times$step_10),
+      "11. Fold and Place in Fridge:" = format_time_12h(times$step_11)
+    )
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
